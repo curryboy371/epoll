@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package join;
+
+message JoinRequest {
+    string id = 1;
+    string password = 2;
+    string name = 3;
+}
+
+message JoinResponse {
+    bool success = 1;
+    string message = 2;
+}

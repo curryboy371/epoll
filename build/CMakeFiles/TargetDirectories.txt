@@ -1,0 +1,5 @@
+/home/chan/project/epoll/build/CMakeFiles/proto_files.dir
+/home/chan/project/epoll/build/CMakeFiles/proto_gen.dir
+/home/chan/project/epoll/build/CMakeFiles/EpollChatServer.dir
+/home/chan/project/epoll/build/CMakeFiles/edit_cache.dir
+/home/chan/project/epoll/build/CMakeFiles/rebuild_cache.dir

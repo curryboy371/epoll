@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package chat;
+
+message ChatMessage {
+  string name = 1;
+  string message = 2;
+}

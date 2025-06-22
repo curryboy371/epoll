@@ -1,0 +1,20 @@
+#ifndef PACKET_H
+#define PACKET_H
+
+#include "define.h"
+
+typedef enum {
+    CMD_CHAT_MESSAGE = 1001,
+    CMD_LOGIN_REQUEST = 1002,
+    CMD_LOGIN_RESPONSE = 1003,
+
+    CMD_JOIN_REQUEST = 1004,
+    CMD_JOIN_RESPONSE = 1005,
+
+    CMD_ADMIN_BROADCAST = 2000
+} PacketCommand;
+
+#define PACKET_HEADER_SIZE  4
+#define MAX_BODY_SIZE       (BUFFER_SIZE - PACKET_HEADER_SIZE)
+
+#endif // PACKET_H

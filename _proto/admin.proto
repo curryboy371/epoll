@@ -1,0 +1,6 @@
+syntax = "proto3";
+package admin;
+
+message AdminMessage {
+  string message = 1;
+}

@@ -1,0 +1,2 @@
+/usr/bin/ar qc libproto_files.a "CMakeFiles/proto_files.dir/proto/admin.pb-c.c.o" "CMakeFiles/proto_files.dir/proto/chat.pb-c.c.o" "CMakeFiles/proto_files.dir/proto/join.pb-c.c.o" "CMakeFiles/proto_files.dir/proto/login.pb-c.c.o"
+/usr/bin/ranlib libproto_files.a
