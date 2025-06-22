@@ -2,13 +2,13 @@
 #define SERVER_CONTEXT_H
 
 #include "define.h"
-#include "db_manager.h"
+//#include "db_manager.h"
 #include "user_manager.h"
 #include "session_manager.h"
 #include "task/task_queue.h"
 
 typedef struct {
-    DBInfo db;
+    //DBInfo db;
     UserInfo user;
     SessionInfo session;
     TaskQueue system_queue;

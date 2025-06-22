@@ -41,14 +41,13 @@ void handle_login_request(int client_fd, const uint8_t* body, size_t body_len) {
         return;
     }
 
-
-    char password_buf[64];
-    if(db_find_user(&server_ctx.db, msg->id, msg->password, sizeof(password_buf))) {
-        printf("success id :%s, pw : %s \n", msg->id, password_buf);
-    }
-    else {
-        printf("failed id :%s, pw : %s \n", msg->id, msg->password);
-    }
+    // char password_buf[64];
+    // if(db_find_user(&server_ctx.db, msg->id, msg->password, sizeof(password_buf))) {
+    //     printf("success id :%s, pw : %s \n", msg->id, password_buf);
+    // }
+    // else {
+    //     printf("failed id :%s, pw : %s \n", msg->id, msg->password);
+    // }
 
     // 메모리 해제
     login__login_request__free_unpacked(msg, NULL);

@@ -27,7 +27,7 @@ void init_server() {
     
     // 초기화
     session_init(&server_ctx.session);
-    db_init(&server_ctx.db, DB_URI, DB_NAME);
+    //db_init(&server_ctx.db, DB_URI, DB_NAME);
     user_manager_init(&server_ctx.user);
 
     // task queue 초기화
