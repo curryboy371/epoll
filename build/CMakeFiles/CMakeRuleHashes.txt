@@ -1,6 +1,0 @@
-# Hashes of file build rules.
-59c075f421dbccc6e77b4a6a7e98e59e /home/chan/project/epoll/proto/admin.pb-c.c
-f05aef57915ad7bf6837ffa2b766609e /home/chan/project/epoll/proto/chat.pb-c.c
-539f5f87a34ae7709ac5ea3e3ed0cf6e /home/chan/project/epoll/proto/join.pb-c.c
-cf365001b67f076702059fdbff09c4b3 /home/chan/project/epoll/proto/login.pb-c.c
-b976d4f3cd89314ae3fa86f440a334ea CMakeFiles/proto_gen
