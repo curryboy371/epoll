@@ -13,7 +13,7 @@
 #define BUFFER_SIZE 512
 
 
-#define MAX_NAME_LEN 24
+#define MAX_NAME_LEN 64
 
 
 #endif // DEFINE_H

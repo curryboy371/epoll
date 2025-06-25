@@ -11,8 +11,6 @@
 int send_packet(int client_fd, PacketCommand cmd, const void* message) {
 
     const ProtobufCMessage* pb = (const ProtobufCMessage*)message;
-    printf("pb: %p\n", pb);
-    printf("pb->descriptor: %p\n", pb->descriptor);
 
     if (!pb->descriptor) {
         printf("pb->descriptor is NULL!\n");
@@ -26,7 +24,6 @@ int send_packet(int client_fd, PacketCommand cmd, const void* message) {
         return -1;
     }
 
-    printf("s 2 \n");
     uint8_t packet_buf[BUFFER_SIZE];
     uint16_t total_len = PACKET_HEADER_SIZE + body_size;
 
@@ -34,9 +31,7 @@ int send_packet(int client_fd, PacketCommand cmd, const void* message) {
     uint16_t net_cmd = htons((uint16_t)cmd);
     memcpy(packet_buf, &net_len, 2);
     memcpy(packet_buf + 2, &net_cmd, 2);
-    
 
-    printf("s 3 \n");
     // 직렬화
     protobuf_c_message_pack(pb, packet_buf + 4);
 

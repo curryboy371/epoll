@@ -1,0 +1,12 @@
+
+syntax = "proto3";
+package leave;
+
+import "common.proto";
+
+
+message LeaveNotice {
+    bool success = 1;               
+    common.User sender = 2;    // 퇴장한 사람 (누가 나갔는지)
+}
+

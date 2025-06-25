@@ -1,8 +1,17 @@
 cmake_minimum_required(VERSION 3.16)
 project(EpollChatServer C)
 
+
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_EXTENSIONS OFF)
+
+# 디버깅 기본값
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Debug)
+endif()
+
+set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
+
 
 # Proto 경로
 set(PROTO_DIR ${CMAKE_SOURCE_DIR}/_proto)
@@ -40,19 +49,33 @@ link_directories(
 # proto 파일 탐색
 file(GLOB PROTO_FILES "${PROTO_DIR}/*.proto")
 
-# protoc 빌드 타겟 생성 (한방에)
-add_custom_target(proto_gen
-    COMMAND protoc --proto_path=${PROTO_DIR} --c_out=${PROTO_GEN_DIR} ${PROTO_FILES}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Generating protobuf-c files..."
-)
+if(NOT PROTO_FILES)
+    message(FATAL_ERROR "No proto files found in ${PROTO_DIR}")
+endif()
 
-# proto 출력 파일 GLOB (항상 타겟 정의 이후에 호출)
-file(GLOB PROTO_GEN_C "${PROTO_GEN_DIR}/*.pb-c.c")
-file(GLOB PROTO_GEN_H "${PROTO_GEN_DIR}/*.pb-c.h")
+# proto 개별 처리
+set(GENERATED_PROTO_SRCS "")
+set(GENERATED_PROTO_HDRS "")
 
-# proto 라이브러리 생성
-add_library(proto_files STATIC ${PROTO_GEN_C})
+foreach(proto_file ${PROTO_FILES})
+    get_filename_component(proto_filename ${proto_file} NAME_WE)
+    set(proto_src "${PROTO_GEN_DIR}/${proto_filename}.pb-c.c")
+    set(proto_hdr "${PROTO_GEN_DIR}/${proto_filename}.pb-c.h")
+
+    add_custom_command(
+        OUTPUT ${proto_src} ${proto_hdr}
+        COMMAND protoc -I=${PROTO_DIR} --c_out=${PROTO_GEN_DIR} ${proto_file}
+        DEPENDS ${proto_file}
+        COMMENT "Generating ${proto_filename}.pb-c.*"
+    )
+
+    list(APPEND GENERATED_PROTO_SRCS ${proto_src})
+    list(APPEND GENERATED_PROTO_HDRS ${proto_hdr})
+endforeach()
+
+add_custom_target(proto_gen DEPENDS ${GENERATED_PROTO_SRCS} ${GENERATED_PROTO_HDRS})
+
+add_library(proto_files STATIC ${GENERATED_PROTO_SRCS})
 add_dependencies(proto_files proto_gen)
 
 # 전체 C 소스
@@ -64,7 +87,6 @@ file(GLOB_RECURSE SOURCES
     packet/*.c
 )
 
-# 최종 실행파일
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_link_libraries(${PROJECT_NAME}
@@ -74,4 +96,5 @@ target_link_libraries(${PROJECT_NAME}
     ${BSON_LIBRARIES}
     pthread
 )
+
 add_dependencies(${PROJECT_NAME} proto_gen)

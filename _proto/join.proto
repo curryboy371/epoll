@@ -1,5 +1,6 @@
 syntax = "proto3";
 
+
 package join;
 
 import "common.proto";
@@ -12,8 +13,13 @@ message JoinRequest {
 
 message JoinResponse {
     bool success = 1;
-    chat_common.User sender = 2;
-    repeated chat_common.User users = 3;
+    common.User sender = 2;
+    repeated common.User users = 3;
     string message = 4;
 
+}
+
+message JoinNotice {
+    bool success = 1;               
+    common.User sender = 2;    // 입장한 사람
 }

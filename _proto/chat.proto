@@ -1,8 +1,29 @@
 syntax = "proto3";
 
+
+
 package chat;
+
+import "common.proto";
 
 message ChatMessage {
   string name = 1;
   string message = 2;
+}
+
+message ChangeNameRequest {
+    string new_name = 1;  // 변경할 닉네임
+}
+
+message ChangeNameResponse {
+    bool success = 1;
+    string message = 2;  // 실패 사유 등 클라이언트 표시용 메시지
+    string new_name = 3;  // 변경된 닉네임
+}
+
+message ChangeNameNotice {
+    bool success = 1;               
+    string old_name = 2;
+    common.User sender = 3;    // 변경한 유저( 새로운 name)
+
 }

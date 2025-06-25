@@ -11,6 +11,6 @@ message LoginRequest {
 
 message LoginResponse {
   bool success = 1;
-  chat_common.User sender = 2;
-  repeated chat_common.User users = 3;
+  common.User sender = 2;
+  repeated common.User users = 3;
 }

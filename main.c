@@ -11,7 +11,7 @@
 #include "system_broadcast.h"
 #include "db_manager.h"
 
-#define DB_URI "mongodb://172.24.32.1:27017"
+#define DB_URI "mongodb://172.19.192.1:27017"
 #define DB_NAME "epoll"
 
 #define PORT 9000

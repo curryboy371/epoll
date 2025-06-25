@@ -21,7 +21,6 @@ void worker_dispatcher(int client_fd, const uint8_t* data, size_t len) {
 
     // 길이 체크
     if (total_len != len) {
-        // log?
         return;   
     }
     printf("receive packet cmd %d\n", cmd);
@@ -41,6 +40,10 @@ void worker_dispatcher(int client_fd, const uint8_t* data, size_t len) {
 
         case CMD_JOIN_REQUEST:
             handle_join_request(client_fd, data + PACKET_HEADER_SIZE, len - PACKET_HEADER_SIZE);
+            break;
+
+        case CMD_CHANGE_NAME_REQUEST:
+            handle_change_name_request(client_fd, data + PACKET_HEADER_SIZE, len - PACKET_HEADER_SIZE);
             break;
         
         case CMD_ADMIN_BROADCAST:

@@ -1,9 +1,10 @@
 // common.proto
 syntax = "proto3";
 
-package chat_common;
+package common;
 
 message User {
-  string id = 1;
-  string name = 2;
+  int32 uid = 1;
+  string id = 2;
+  string name = 3;
 }

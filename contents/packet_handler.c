@@ -9,6 +9,76 @@
 #include "login.pb-c.h"
 #include "join.pb-c.h"
 
+#include "leave.pb-c.h"
+
+
+Common__User* create_chat_user(User* user_info)
+{
+    Common__User* user = malloc(sizeof(Common__User));
+    common__user__init(user);
+
+    if (user_info->id) {
+        user->id = malloc(strlen(user_info->id) + 1);
+        strcpy(user->id, user_info->id);
+    } else {
+        user->id = NULL;
+    }
+
+    if (user_info->name) {
+        user->name = malloc(strlen(user_info->name) + 1);
+        strcpy(user->name, user_info->name);
+    } else {
+        user->name = NULL;
+    }
+
+    user->uid = user_info->uid;
+   
+    return user;
+}
+
+Common__User* create_chat_user_by_id_name(const char* id, const char* name)
+{
+    Common__User* user = malloc(sizeof(Common__User));
+    if (!user)
+        return NULL;
+
+    common__user__init(user);
+
+    // id 복사
+    if (id) {
+        size_t id_len = strlen(id) + 1;
+        user->id = malloc(id_len);
+        if (user->id)
+            memcpy(user->id, id, id_len);
+    } else {
+        user->id = NULL;
+    }
+
+    // name 복사
+    if (name) {
+        size_t name_len = strlen(name) + 1;
+        user->name = malloc(name_len);
+        if (user->name)
+            memcpy(user->name, name, name_len);
+    } else {
+        user->name = NULL;
+    }
+
+    return user;
+}
+
+char* alloc_and_copy_string(const char* src)
+{
+    if (src == NULL) return NULL;
+
+    size_t len = strlen(src) + 1;
+    char* dest = malloc(len);
+    if (dest)
+        memcpy(dest, src, len);
+
+    return dest;
+}
+
 
 void handle_chat_message(int client_fd, const uint8_t* body, size_t body_len) {
 
@@ -33,10 +103,7 @@ void handle_chat_message(int client_fd, const uint8_t* body, size_t body_len) {
 
 }
 
-
 void handle_login_request(int client_fd, const uint8_t* body, size_t body_len) {
-
-    printf("handle_login_request\n");
 
     Login__LoginRequest* msg = login__login_request__unpack(NULL, body_len, body);
     if (!msg) {
@@ -44,50 +111,51 @@ void handle_login_request(int client_fd, const uint8_t* body, size_t body_len) {
         return;
     }
 
-
     bool success = FALSE;
-    ChatCommon__User* users = NULL;
 
-    User_Data user;
-    if(db_find_user_by_pw(&server_ctx.db, msg->id, msg->password, &user)) {
-        if(user_manager_add(&server_ctx.user, msg->id, msg->password, user.user_name, client_fd)) {
-            success = TRUE;
+    Login__LoginResponse* response = malloc(sizeof(Login__LoginResponse));
+    login__login_response__init(response);
+    response->success = FALSE;
+
+    User client_user;
+    if (db_find_user_by_pw(&server_ctx.db, msg->id, msg->password, &client_user)) {
+        if (user_manager_add(&server_ctx.user, &client_user, client_fd)) {
+
+            response->success = TRUE;
+
+            response->sender = create_chat_user(&client_user);
 
             // users 리스트 설정
             int user_len = 0;
-            User* user_list = user_manager_get_all(&server_ctx.user, &user_len);
-            n_users = user_len;
+            User** user_list = user_manager_get_all(&server_ctx.user, &user_len);
 
-            if (user_list && user_len > 0) {
-                users = malloc(sizeof(ChatCommon__User) * user_len);
-                for (int i = 0; i < user_len; i++) {
-                    users[i] = (ChatCommon__User) CHAT_COMMON__USER__INIT;
-                    users[i].id = strdup(user_list[i].id);
-                    users[i].name = strdup(user_list[i].name);
-                }
+            response->n_users = user_len;
+
+            response->users = malloc(sizeof(Common__User*) * user_len);
+
+            for (int i = 0; i < user_len; i++) {
+
+                response->users[i] = create_chat_user(user_list[i]);
             }
+
+            free(user_list);
+
         }
     }
-
-    Login__LoginResponse response = LOGIN__LOGIN_RESPONSE__INIT;
-    response.success = success;
-    response.sender = sender;
-    response.n_users = user_len;
-    response.users = users;
-
-    send_packet(client_fd, CMD_LOGIN_RESPONSE, &response);
-
-
-    // 메모리 해제
-    free(sender.id);
-    free(sender.name);
-    for (int i = 0; i < user_len; i++) {
-        free(users[i].id);
-        free(users[i].name);
-    }
-    free(users);
     
-    printf("2\n");
+    // send_packet
+    send_packet(client_fd, CMD_LOGIN_RESPONSE, response);
+
+    // 입장 메시지
+    if(response->success) {
+
+        // join한 사람 제외, join user 뿌려줌
+        send_join_notice(&client_user, client_fd);
+    }
+
+
+
+    login__login_response__free_unpacked(response, NULL);
     login__login_request__free_unpacked(msg, NULL);
 }
 
@@ -103,78 +171,76 @@ void handle_join_request(int client_fd, const uint8_t* body, size_t body_len) {
         return;
     }
 
-    Join__JoinResponse response = JOIN__JOIN_RESPONSE__INIT;
-    response.n_users = 0;
+    Join__JoinResponse* response = malloc(sizeof(Join__JoinResponse));
+    join__join_response__init(response);
+    response->success = FALSE;
 
     // 값 검증 
     if (!msg->id || strlen(msg->id) == 0 ||
         !msg->password || strlen(msg->password) == 0 ||
         !msg->name || strlen(msg->name) == 0)
     {
-        response.success = FALSE;
-        response.message = "Invalid input (empty id/password/name)";
-        send_packet(client_fd, CMD_JOIN_RESPONSE, &response);
+        response->message = alloc_and_copy_string("Invalid input (empty id/password/name)");
+        send_packet(client_fd, CMD_JOIN_RESPONSE, response);
+        join__join_response__free_unpacked(response, NULL);
         join__join_request__free_unpacked(msg, NULL);
         return;
     }
 
      // 2. 중복 검사 및 DB insert
      if (db_insert_user(&server_ctx.db, msg->id, msg->password, msg->name) == FALSE) {
-         response.success = FALSE;
-         response.message = "ID duplication";
-         send_packet(client_fd, CMD_JOIN_RESPONSE, &response);
-         return;
+
+        response->message = alloc_and_copy_string("ID duplication");
+        send_packet(client_fd, CMD_JOIN_RESPONSE, response);
+        join__join_response__free_unpacked(response, NULL);
+        join__join_request__free_unpacked(msg, NULL);
+        return;
      }
 
     // user mgr
-    if (user_manager_add(&server_ctx.user, msg->id, msg->password, msg->name, client_fd) == FALSE) {
-        response.success = FALSE;
-        response.message = "Faild login...";
-        send_packet(client_fd, CMD_JOIN_RESPONSE, &response);
+    User find_user;
+    if (db_find_user_by_pw(&server_ctx.db, msg->id, msg->password, &find_user) == FALSE){
+        response->message = alloc_and_copy_string("User Find Failed");
+        send_packet(client_fd, CMD_JOIN_RESPONSE, response);
+        join__join_response__free_unpacked(response, NULL);
         join__join_request__free_unpacked(msg, NULL);
         return;
     }
 
+    if (user_manager_add(&server_ctx.user, &find_user, client_fd) == FALSE) {
+        response->message = alloc_and_copy_string("Faild login");
+        send_packet(client_fd, CMD_JOIN_RESPONSE, response);
+        join__join_response__free_unpacked(response, NULL);
+        join__join_request__free_unpacked(msg, NULL);
+        return;
+    }
+
+    // sender 정보 전달
+    response->sender = create_chat_user_by_id_name(msg->id, msg->name);
+
+    // 접속 유저 리스트 전달
     int user_len = 0;
-    User* user_list = user_manager_get_all(&server_ctx.user, &user_len);
-    if(user_list) {
+    User** user_list = user_manager_get_all(&server_ctx.user, &user_len);
 
-        response.n_users = user_len;
-        response.users = malloc(sizeof(ChatCommon__User*) * response.n_users);
-        
-        for (size_t i = 0; i < response.n_users; i++) {
-            response.users[i] = malloc(sizeof(ChatCommon__User));
-            chat_common__user__init(response.users[i]);
+    response->n_users = user_len;
+    response->users = malloc(sizeof(Common__User*) * user_len);
 
-            // 널문자 user_list에 이미 존재함
-            response.users[i]->id = strdup(user_list[i].id);
-            response.users[i]->name = strdup(user_list[i].name);
-        }
+    for (int i = 0; i < user_len; i++) {
+        response->users[i] = create_chat_user(user_list[i]);
     }
 
-    response.success = TRUE;
+    free(user_list);
 
-    send_packet(client_fd, CMD_JOIN_RESPONSE, &response);
+    response->success = TRUE;
+    send_packet(client_fd, CMD_JOIN_RESPONSE, response);
 
-    // 입장 메시지
-    Chat__ChatMessage chat_msg = CHAT__CHAT_MESSAGE__INIT;
-    chat_msg.name = msg->name;
-    chat_msg.message = "님이 입장하였음";
-    broadcast_user_packet_exept(CMD_CHAT_MESSAGE, &chat_msg, client_fd); // 자기 자신은 입장메시지 필요 없음
-
-
-    // 메모리 정리
-    for (size_t i = 0; i < response.n_users; i++) {
-        free(response.users[i]->id);
-        free(response.users[i]->name);
-        free(response.users[i]);
-    }
-
-    if(response.users) {
-        free(response.users);
+    if(response->success) {
+        // join한 사람 제외, join user 뿌려줌
+        send_join_notice(&find_user, client_fd);
     }
 
     // 메모리 해제
+    join__join_response__free_unpacked(response, NULL);
     join__join_request__free_unpacked(msg, NULL);
 }
 
@@ -199,4 +265,95 @@ void handle_admin_message(int client_fd, const uint8_t* body, size_t body_len) {
     chat_msg.message = "nice to meet you!!!";
     send_packet(client_fd, CMD_CHAT_MESSAGE, &chat_msg);
     
+}
+
+
+void handle_change_name_request(int client_fd, const uint8_t* body, size_t body_len)
+{
+    Chat__ChangeNameRequest* req = chat__change_name_request__unpack(NULL, body_len, body);
+    if (!req) {
+        printf("Protobuf unpack fail (ChangeNameRequest)\n");
+        return;
+    }
+
+    // 유저 찾기
+    User* user = user_manager_find_by_session(&server_ctx.user, client_fd);
+    if (!user) {
+        printf("User not found for session %d\n", client_fd);
+        chat__change_name_request__free_unpacked(req, NULL);
+        return;
+    }
+
+    // 닉네임 변경 전 기존 이름 백업
+    char old_name[MAX_NAME_LEN];
+    strncpy(old_name, user->name, sizeof(old_name) - 1);
+    old_name[sizeof(old_name) - 1] = '\0';
+
+    // DB Name 변경
+    if (db_update_user_name(&server_ctx.db, user->uid, req->new_name) == FALSE) {
+        printf("change name db failed %d\n", client_fd);
+        chat__change_name_request__free_unpacked(req, NULL);
+        return;
+    }
+
+    // 닉네임 변경
+    strncpy(user->name, req->new_name, sizeof(user->name) - 1);
+    user->name[sizeof(user->name) - 1] = '\0';
+
+    // 응답 전송
+    Chat__ChangeNameResponse resp = CHAT__CHANGE_NAME_RESPONSE__INIT;
+    resp.success = TRUE;
+    resp.new_name = user->name;
+
+    send_packet(client_fd, CMD_CHANGE_NAME_RESPONSE, &resp);
+
+    // 닉네임 변경 브로드캐스트 알림
+    Chat__ChangeNameNotice notice = CHAT__CHANGE_NAME_NOTICE__INIT;
+    Common__User sender = COMMON__USER__INIT;
+    sender.uid = user->uid;
+    sender.id = user->id;
+    sender.name = user->name;
+    notice.sender = &sender;
+    notice.old_name = old_name;
+
+    notice.success = TRUE;
+
+    broadcast_user_packet(CMD_CHANGE_NAME_NOTIFY, &notice);
+
+    chat__change_name_request__free_unpacked(req, NULL);
+}
+
+
+///////////////////////////////////////////////////////////////////
+
+void send_join_notice(User* user_info, int exept_fd)
+{
+    printf("send join noty");
+    Join__JoinNotice notify = JOIN__JOIN_NOTICE__INIT;
+    notify.success = TRUE;
+
+    Common__User sender = COMMON__USER__INIT;
+    sender.uid = user_info->uid;
+    sender.id = user_info->id;
+    sender.name = user_info->name;
+
+    notify.sender = &sender;
+
+    broadcast_user_packet_exept(CMD_JOIN_NOTIFY, &notify, exept_fd);
+}
+
+void send_leave_notify(User* user_info)
+{
+    Leave__LeaveNotice  notify = LEAVE__LEAVE_NOTICE__INIT;
+
+    notify.success = TRUE;
+
+
+    Common__User sender = COMMON__USER__INIT;
+    sender.uid = user_info->uid;
+    sender.id = user_info->id;
+    sender.name = user_info->name;
+    notify.sender = &sender;
+
+    broadcast_user_packet(CMD_LEAVE_NOTIFY, &notify);
 }
