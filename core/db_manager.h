@@ -13,7 +13,8 @@ typedef struct {
 Boolean db_init(DBInfo *manager, const char *uri, const char *dbname);
 void db_cleanup(DBInfo *manager);
 
-Boolean db_find_user(DBInfo *manager, const char *user_id, char *password_out, size_t out_len);
+Boolean db_find_user_by_pw(DBInfo *manager, const char *user_id, const char *password, User_Data* out_user);
+Boolean db_find_all_users(DBInfo *manager, User_Data* out_users, size_t* out_count);
 Boolean db_insert_user(DBInfo *manager, const char *user_id, const char *password, const char *nickname);
 
 #endif // DB_MANAGER_H

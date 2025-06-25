@@ -17,8 +17,6 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/core/task
     ${CMAKE_SOURCE_DIR}/contents
     ${CMAKE_SOURCE_DIR}/packet
-    ${CMAKE_SOURCE_DIR}/worker
-    ${CMAKE_SOURCE_DIR}/system
     ${PROTO_GEN_DIR}
 )
 
@@ -39,27 +37,23 @@ link_directories(
     ${BSON_LIBRARY_DIRS}
 )
 
-# proto 파일 처리
+# proto 파일 탐색
 file(GLOB PROTO_FILES "${PROTO_DIR}/*.proto")
 
-set(PROTO_GEN_C)
-set(PROTO_GEN_H)
-foreach(proto ${PROTO_FILES})
-    get_filename_component(proto_name ${proto} NAME_WE)
+# protoc 빌드 타겟 생성 (한방에)
+add_custom_target(proto_gen
+    COMMAND protoc --proto_path=${PROTO_DIR} --c_out=${PROTO_GEN_DIR} ${PROTO_FILES}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Generating protobuf-c files..."
+)
 
-    add_custom_command(
-        OUTPUT ${PROTO_GEN_DIR}/${proto_name}.pb-c.c ${PROTO_GEN_DIR}/${proto_name}.pb-c.h
-        COMMAND protoc --proto_path=${PROTO_DIR} --c_out=${PROTO_GEN_DIR} ${proto}
-        DEPENDS ${proto}
-    )
+# proto 출력 파일 GLOB (항상 타겟 정의 이후에 호출)
+file(GLOB PROTO_GEN_C "${PROTO_GEN_DIR}/*.pb-c.c")
+file(GLOB PROTO_GEN_H "${PROTO_GEN_DIR}/*.pb-c.h")
 
-    list(APPEND PROTO_GEN_C ${PROTO_GEN_DIR}/${proto_name}.pb-c.c)
-    list(APPEND PROTO_GEN_H ${PROTO_GEN_DIR}/${proto_name}.pb-c.h)
-endforeach()
-
-# proto 라이브러리 target 생성
+# proto 라이브러리 생성
 add_library(proto_files STATIC ${PROTO_GEN_C})
-add_custom_target(proto_gen DEPENDS ${PROTO_GEN_C})
+add_dependencies(proto_files proto_gen)
 
 # 전체 C 소스
 file(GLOB_RECURSE SOURCES
@@ -70,10 +64,8 @@ file(GLOB_RECURSE SOURCES
     packet/*.c
 )
 
+# 최종 실행파일
 add_executable(${PROJECT_NAME} ${SOURCES})
-
-# 빌드 순서 보장
-add_dependencies(${PROJECT_NAME} proto_gen)
 
 target_link_libraries(${PROJECT_NAME}
     proto_files
@@ -82,3 +74,4 @@ target_link_libraries(${PROJECT_NAME}
     ${BSON_LIBRARIES}
     pthread
 )
+add_dependencies(${PROJECT_NAME} proto_gen)

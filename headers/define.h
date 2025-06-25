@@ -8,9 +8,12 @@
 #include <stddef.h>
 
 #include "enums.h"
+#include "structs.h"
 
 #define BUFFER_SIZE 512
 
+
+#define MAX_NAME_LEN 24
 
 
 #endif // DEFINE_H

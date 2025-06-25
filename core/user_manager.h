@@ -24,11 +24,12 @@ typedef struct {
 } UserInfo;
 
 void user_manager_init(UserInfo* info);
-Boolean user_manager_add(UserInfo* info, const char* id, const char* pw, const char* name);
+Boolean user_manager_add(UserInfo* info, const char* id, const char* pw, const char* name, const int session_fd);
 User* user_manager_find(UserInfo* info, const char* id);
-Boolean user_manager_login(UserInfo* info, const char* id, const char* pw, int session_fd);
+User* user_manager_get_all(UserInfo* info, int* out_count);
 void user_manager_logout(UserInfo* info, int session_fd);
 
 void user_manager_broadcast(UserInfo* info, SessionInfo* session_info, const uint8_t* data, size_t len);
+void user_manager_broadcast_except(UserInfo* info, const int except_fd, SessionInfo* session_info, const uint8_t* data, size_t len);
 
 #endif // USER_MANAGER_H

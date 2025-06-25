@@ -58,6 +58,8 @@ int session_send(SessionInfo* info, int client_fd, const uint8_t* data, size_t l
     }
 
     int sent = send(client_fd, data, len, 0);
+
+    printf("send %d \n", len);
     return (sent == len) ? 0 : -1;
 }
 
