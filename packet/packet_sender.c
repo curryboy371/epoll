@@ -11,7 +11,15 @@
 int send_packet(int client_fd, PacketCommand cmd, const void* message) {
 
     const ProtobufCMessage* pb = (const ProtobufCMessage*)message;
-    printf("s 1 \n");
+    printf("pb: %p\n", pb);
+    printf("pb->descriptor: %p\n", pb->descriptor);
+
+    if (!pb->descriptor) {
+        printf("pb->descriptor is NULL!\n");
+        return -1;
+    }
+
+
     size_t body_size = protobuf_c_message_get_packed_size(pb);
     if (body_size > MAX_BODY_SIZE) {
         printf("Body size overflow!\n");
@@ -90,6 +98,7 @@ int broadcast_user_packet(PacketCommand cmd, const void* message) {
 int broadcast_user_packet_exept(PacketCommand cmd, const void* message, const int except_fd) {
 
     const ProtobufCMessage* pb = (const ProtobufCMessage*)message;
+
     size_t body_size = protobuf_c_message_get_packed_size(pb);
     if (body_size > MAX_BODY_SIZE) {
         printf("Body size overflow!\n");

@@ -44,84 +44,50 @@ void handle_login_request(int client_fd, const uint8_t* body, size_t body_len) {
         return;
     }
 
-    Login__LoginResponse response = LOGIN__LOGIN_RESPONSE__INIT;
-    response.sender = NULL;
-    response.users = NULL;
-    response.n_users = 0;
+
+    bool success = FALSE;
+    ChatCommon__User* users = NULL;
 
     User_Data user;
-    if(db_find_user_by_pw(&server_ctx.db, msg->id, msg->password, &user) == FALSE) {
-        printf("failed id :%s, pw : %s \n", msg->id, msg->password);
-        response.success = FALSE;
-    }
-    else {
+    if(db_find_user_by_pw(&server_ctx.db, msg->id, msg->password, &user)) {
+        if(user_manager_add(&server_ctx.user, msg->id, msg->password, user.user_name, client_fd)) {
+            success = TRUE;
 
-        // user add
-        if (user_manager_add(&server_ctx.user, msg->id, msg->password, user.user_name, client_fd) == FALSE) {
-            printf("접속중인 유저 %s", msg->id);
-            response.success = FALSE;
-        }
-        else {
-
-            response.success = TRUE;
-
-            printf("1\n");
-            //ChatCommon__User sender = CHAT_COMMON__USER__INIT;
-
-            // sender 설정
-            response.sender = malloc(sizeof(ChatCommon__User));
-            chat_common__user__init(response.sender);
-            response.sender->id = strdup(user.user_id);
-            response.sender->name = strdup(user.user_name);
-
-            // sender.id = user.user_id;
-            // sender.name = user.user_name;
-            // response.sender = &sender;
-
-
+            // users 리스트 설정
             int user_len = 0;
             User* user_list = user_manager_get_all(&server_ctx.user, &user_len);
-            if(user_list) {
+            n_users = user_len;
 
-                response.n_users = user_len;
-                response.users = malloc(sizeof(ChatCommon__User*) * user_len);
-
+            if (user_list && user_len > 0) {
+                users = malloc(sizeof(ChatCommon__User) * user_len);
                 for (int i = 0; i < user_len; i++) {
-                    response.users[i] = malloc(sizeof(ChatCommon__User));
-                    chat_common__user__init(response.users[i]);
-                    response.users[i]->id = strdup(user_list[i].id);
-                    response.users[i]->name = strdup(user_list[i].name);
+                    users[i] = (ChatCommon__User) CHAT_COMMON__USER__INIT;
+                    users[i].id = strdup(user_list[i].id);
+                    users[i].name = strdup(user_list[i].name);
                 }
             }
         }
     }
 
-    printf("2\n");
+    Login__LoginResponse response = LOGIN__LOGIN_RESPONSE__INIT;
+    response.success = success;
+    response.sender = sender;
+    response.n_users = user_len;
+    response.users = users;
 
     send_packet(client_fd, CMD_LOGIN_RESPONSE, &response);
 
-    printf("3\n");
 
-    // 메모리 정리
-    if (response.users) {
-        for (int i = 0; i < response.n_users; i++) {
-            if (response.users[i]) {
-                free(response.users[i]->id);
-                free(response.users[i]->name);
-                free(response.users[i]);
-            }
-        }
-        free(response.users);
+    // 메모리 해제
+    free(sender.id);
+    free(sender.name);
+    for (int i = 0; i < user_len; i++) {
+        free(users[i].id);
+        free(users[i].name);
     }
-
-    if (response.sender) {
-        free(response.sender->id);
-        free(response.sender->name);
-        free(response.sender);
-    }
-
-    printf("4\n");
-
+    free(users);
+    
+    printf("2\n");
     login__login_request__free_unpacked(msg, NULL);
 }
 
