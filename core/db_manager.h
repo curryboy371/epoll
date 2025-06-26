@@ -3,7 +3,7 @@
 
 #include "define.h"
 #include "user_manager.h"
-
+#include <netdb.h>
 #include <mongoc/mongoc.h>
 
 typedef struct {

@@ -48,9 +48,11 @@ Common__User* create_chat_user_by_id_name(const char* id, const char* name)
     if (id) {
         size_t id_len = strlen(id) + 1;
         user->id = malloc(id_len);
-        if (user->id)
+        if (user->id) {
             memcpy(user->id, id, id_len);
-    } else {
+        }
+    } 
+    else {
         user->id = NULL;
     }
 
@@ -58,9 +60,11 @@ Common__User* create_chat_user_by_id_name(const char* id, const char* name)
     if (name) {
         size_t name_len = strlen(name) + 1;
         user->name = malloc(name_len);
-        if (user->name)
+        if (user->name) {
             memcpy(user->name, name, name_len);
-    } else {
+        }
+    } 
+    else {
         user->name = NULL;
     }
 
@@ -165,8 +169,13 @@ void handle_login_request(int client_fd, const uint8_t* body, size_t body_len) {
             }
 
             free(user_list);
-
         }
+        else {
+            response->message = alloc_and_copy_string("중벅 로그인..");
+        }
+    }
+    else{
+        response->message = alloc_and_copy_string("db 인증 실패..");
     }
     
     // send_packet
@@ -353,7 +362,6 @@ void handle_change_name_request(int client_fd, const uint8_t* body, size_t body_
 
 void send_join_notice(User* user_info, int exept_fd)
 {
-    printf("send join noty");
     Join__JoinNotice notify = JOIN__JOIN_NOTICE__INIT;
     notify.success = TRUE;
 
