@@ -118,14 +118,13 @@ void handle_chat_command(int client_fd, const uint8_t* body, size_t body_len) {
     size_t cmd_len = strlen(msg->message);
     char cmd_buffer[64] = {0};
 
-    printf("msg %s  bmp %s", msg->message, CMD_BMP);
-    if(strncmp(msg->message, CMD_BMP, cmd_len)) {
+    if(strncmp(msg->message, CMD_BMP, cmd_len) == 0) {
 
         if(driver_manager_read(&server_ctx.driver, DRI_BMP180, cmd_buffer)) {
             find_command = TRUE;
         }
     }
-    else if(strncmp(msg->message, CMD_BH, cmd_len)) {
+    else if(strncmp(msg->message, CMD_BH, cmd_len) == 0) {
 
     }
 
