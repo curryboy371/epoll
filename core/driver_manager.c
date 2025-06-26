@@ -44,6 +44,7 @@ Boolean driver_manager_read(DriverInfo* info, DriverType type, char* out_buffer)
     if(fd == -1) {
         // 여기서 fd open
         if(driver_manager_open(info, type)) {
+            printf("driver open failed\n");
             return FALSE;
         }
     }
@@ -51,6 +52,7 @@ Boolean driver_manager_read(DriverInfo* info, DriverType type, char* out_buffer)
     char buf[128];
     ssize_t len = read(fd, buf, sizeof(buf) - 1);
     if (len < 0) {
+        printf("driver read failed\n");
         perror("Failed to read from device");
         return FALSE;
     }
