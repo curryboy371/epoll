@@ -11,7 +11,8 @@
 #include "system_broadcast.h"
 #include "db_manager.h"
 
-#define DB_URI "mongodb://172.19.192.1:27017"
+//#define DB_URI_BACKUP "mongodb://172.17.208.1:27017"
+#define DB_URI "mongodb://172.17.208.1:27017"
 #define DB_NAME "epoll"
 
 #define PORT 9000
@@ -28,12 +29,12 @@ void init_server() {
     // 초기화
     session_init(&server_ctx.session);
     db_init(&server_ctx.db, DB_URI, DB_NAME);
+    driver_manager_init(&server_ctx.driver);
     user_manager_init(&server_ctx.user);
 
     // task queue 초기화
     system_task_init();
     worker_task_init();
-
 
     // thread start
     thread_start(WORKER_THREAD_COUNT, worker_task_main);

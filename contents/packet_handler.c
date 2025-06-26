@@ -1,6 +1,7 @@
 #include "packet_handler.h"
 
 #include "server_context.h"
+#include "driver_manager.h"
 
 #include "packet_sender.h"
 #include "packet.h"
@@ -113,20 +114,30 @@ void handle_chat_command(int client_fd, const uint8_t* body, size_t body_len) {
     }
 
     // 여기서 command
+    Boolean find_command = FALSE;
     size_t cmd_len = strlen(msg->message);
-    if(strncmp(msg->message, CMD_BMP, cmd_len)) { // bmp180
+    char cmd_buffer[64] = {0};
+    if(strncmp(msg->message, CMD_BMP, cmd_len)) {
 
-        
+        if(driver_manager_read(&server_ctx.driver, DRI_BMP180, cmd_buffer)) {
+            find_command = TRUE;
+        }
     }
     else if(strncmp(msg->message, CMD_BH, cmd_len)) {
 
     }
 
-    // broadcast
     Chat__ChatMessage chat_msg = CHAT__CHAT_MESSAGE__INIT;
     chat_msg.name = CMD_NAME;
-    chat_msg.message = "wait...";
-    broadcast_user_packet(CMD_CHAT_MESSAGE, &chat_msg);
+
+    if(find_command) {
+        chat_msg.message = cmd_buffer;
+        broadcast_user_packet(CMD_CHAT_MESSAGE, &chat_msg);
+    }
+    else {
+        chat_msg.message = "command failed";
+        send_packet(client_fd, CMD_CHAT_MESSAGE, &chat_msg);
+    }
 
     // 메모리 정리
     chat__chat_command__free_unpacked(msg, NULL);

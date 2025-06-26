@@ -9,3 +9,5 @@ typedef enum {
     PARSE_COMPLETE   = 1,  // 패킷 완성
     PARSE_ERROR      = -1  // 패킷 에러 (길이 이상 등)
 } ParseResult;
+
+
