@@ -52,11 +52,13 @@ Boolean driver_manager_read(DriverInfo* info, DriverType type, char* out_buffer)
     }
 
     int fd = info->drivers[type].driver_fd;
-    printf("fd %d\n", fd);
     if (fd < 0) {
         printf("Invalid driver fd: %d\n", fd);
         return FALSE;
     }
+
+    // 다시 읽기 위해 위치 초기화
+    lseek(fd, 0, SEEK_SET);
 
     char buf[128];
     ssize_t len = read(fd, buf, sizeof(buf) - 1);
