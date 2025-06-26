@@ -57,6 +57,10 @@ int session_send(SessionInfo* info, int client_fd, const uint8_t* data, size_t l
         return -1;
     }
 
+    if( session->fd == -1) {
+        return -1;
+    }
+
     int sent = send(client_fd, data, len, 0);
 
     printf("send %d \n", len);
@@ -66,6 +70,11 @@ int session_send(SessionInfo* info, int client_fd, const uint8_t* data, size_t l
 void session_broadcast(SessionInfo* info, const uint8_t* data, size_t len) {
     for (int i = 0; i < MAX_SESSIONS; i++) {
         if (info->sessions[i].active) {
+
+            if( info->sessions[i].fd == -1) {
+                return -1;
+            }
+
             send(info->sessions[i].fd, data, len, 0);
         }
     }

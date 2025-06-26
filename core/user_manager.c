@@ -186,7 +186,7 @@ void user_manager_broadcast(UserInfo* info, SessionInfo* session_info, const uin
         User* user = user_list[i];
         if (user->session_fd != -1) {
             Session* session = session_get(session_info, user->session_fd);
-            if (session) {
+            if (session && session->fd != -1) {
                 send(user->session_fd, data, len, 0);
             }
         }
@@ -210,7 +210,7 @@ void user_manager_broadcast_except(UserInfo* info, const int except_fd, SessionI
         User* user = user_list[i];
         if (user->session_fd != -1 && user->session_fd != except_fd) {
             Session* session = session_get(session_info, user->session_fd);
-            if (session) {
+            if (session && session->fd != -1) {
                 send(user->session_fd, data, len, 0);
             }
         }
