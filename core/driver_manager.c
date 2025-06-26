@@ -21,14 +21,14 @@ void driver_manager_init(DriverInfo* info) {
 }
 
 
-Boolean driver_manager_open(DriverInfo* info, DriverType type) {
+Boolean driver_manager_open(DriverInfo* info, DriverType type, int open_option) {
 
     if(!info) {
         return FALSE;
     }
 
     printf("driver_manager_open %s\n", info->drivers[type].driver_file_name);
-    info->drivers[type].driver_fd = open(info->drivers[type].driver_file_name, O_RDONLY);
+    info->drivers[type].driver_fd = open(info->drivers[type].driver_file_name, open_option);
     if (info->drivers[type].driver_fd < 0) {
         printf("Failed to open: %s %s\n", info->drivers[type].driver_file_name, strerror(errno));
         return  FALSE;
@@ -45,7 +45,7 @@ Boolean driver_manager_read(DriverInfo* info, DriverType type, char* out_buffer)
     
     if(info->drivers[type].driver_fd == -1) {
         // 여기서 fd open
-        if(driver_manager_open(info, type) == FALSE) {
+        if(driver_manager_open(info, type, O_RDONLY) == FALSE) {
             printf("driver open failed\n");
             return FALSE;
         }
@@ -82,7 +82,7 @@ Boolean driver_manager_write(DriverInfo* info, DriverType type, char* buffer) {
     
     if(info->drivers[type].driver_fd == -1) {
         // 여기서 fd open
-        if(driver_manager_open(info, type) == FALSE) {
+        if(driver_manager_open(info, type, O_WRONLY) == FALSE) {
             printf("driver open failed\n");
             return FALSE;
         }

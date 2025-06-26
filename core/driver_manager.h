@@ -25,7 +25,7 @@ typedef struct {
 
 void driver_manager_init(DriverInfo* info);
 
-Boolean driver_manager_open(DriverInfo* info, DriverType type);
+Boolean driver_manager_open(DriverInfo* info, DriverType type, int open_option);
 
 Boolean driver_manager_read(DriverInfo* info, DriverType type, char* out_buffer);
 Boolean driver_manager_write(DriverInfo* info, DriverType type, char* buffer);
