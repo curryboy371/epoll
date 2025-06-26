@@ -32,6 +32,8 @@ Boolean driver_manager_open(DriverInfo* info, DriverType type) {
         printf("Failed to open: %s %s\n", info->drivers[type].driver_file_name, strerror(errno));
         return  FALSE;
     }
+
+    return TRUE;
 }
 
 Boolean driver_manager_read(DriverInfo* info, DriverType type, char* out_buffer) {
@@ -43,7 +45,7 @@ Boolean driver_manager_read(DriverInfo* info, DriverType type, char* out_buffer)
     int fd = info->drivers[type].driver_fd;
     if(fd == -1) {
         // 여기서 fd open
-        if(driver_manager_open(info, type)) {
+        if(driver_manager_open(info, type) == FALSE) {
             printf("driver open failed\n");
             return FALSE;
         }
@@ -58,4 +60,7 @@ Boolean driver_manager_read(DriverInfo* info, DriverType type, char* out_buffer)
     buf[len] = '\0';
 
     strncpy(out_buffer, buf, len);
+
+    return TRUE;
+
 }
