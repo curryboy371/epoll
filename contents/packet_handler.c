@@ -3,6 +3,7 @@
 #include "server_context.h"
 #include "driver_manager.h"
 
+
 #include "packet_sender.h"
 #include "packet.h"
 #include "chat.pb-c.h"
@@ -123,21 +124,38 @@ void handle_chat_command(int client_fd, const uint8_t* body, size_t body_len) {
         if(driver_manager_read(&server_ctx.driver, DRI_BMP180, cmd_buffer)) {
             find_command = TRUE;
         }
-    }
-    else if(strncmp(msg->message, CMD_BH, cmd_len) == 0) {
+        
+        Chat__ChatMessage chat_msg = CHAT__CHAT_MESSAGE__INIT;
+        chat_msg.name = CMD_NAME;
 
+        if(find_command) {
+            chat_msg.message = cmd_buffer;
+            broadcast_user_packet(CMD_CHAT_MESSAGE, &chat_msg);
+        }
+        else {
+            chat_msg.message = "command failed";
+            send_packet(client_fd, CMD_CHAT_MESSAGE, &chat_msg);
+        }
     }
+    else if(strncmp(msg->message, CMD_LCD, cmd_len) == 0) {
 
-    Chat__ChatMessage chat_msg = CHAT__CHAT_MESSAGE__INIT;
-    chat_msg.name = CMD_NAME;
+        sprintf(cmd_buffer, "LCD, %d", server_ctx.user.count);
+        if(driver_manager_write(&server_ctx.driver, DRI_LCD1602, cmd_buffer)) {
+            find_command = TRUE;
+        }
 
-    if(find_command) {
-        chat_msg.message = cmd_buffer;
-        broadcast_user_packet(CMD_CHAT_MESSAGE, &chat_msg);
-    }
-    else {
-        chat_msg.message = "command failed";
-        send_packet(client_fd, CMD_CHAT_MESSAGE, &chat_msg);
+        Chat__ChatMessage chat_msg = CHAT__CHAT_MESSAGE__INIT;
+        chat_msg.name = CMD_NAME;
+
+        if(find_command) {
+            chat_msg.message = cmd_buffer;
+            send_packet(client_fd, CMD_CHAT_MESSAGE, &chat_msg);
+        }
+        else {
+            chat_msg.message = "command failed";
+            send_packet(client_fd, CMD_CHAT_MESSAGE, &chat_msg);
+        }
+
     }
 
     // 메모리 정리

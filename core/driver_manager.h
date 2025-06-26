@@ -5,10 +5,11 @@
 
 // device driver file
 #define DEV_FILE_BMP "/dev/bmp180"
+#define DEV_FILE_LCD "/dev/lcd1602"
 
 typedef enum {
     DRI_BMP180, 
-    //DRI_BH1750,
+    DRI_LCD1602,
     DRI_MAX
 } DriverType;
 
@@ -27,6 +28,6 @@ void driver_manager_init(DriverInfo* info);
 Boolean driver_manager_open(DriverInfo* info, DriverType type);
 
 Boolean driver_manager_read(DriverInfo* info, DriverType type, char* out_buffer);
-
+Boolean driver_manager_write(DriverInfo* info, DriverType type, char* buffer);
 
 #endif // DRIVER_MANAGER_H

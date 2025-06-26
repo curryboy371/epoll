@@ -16,7 +16,7 @@ void driver_manager_init(DriverInfo* info) {
     }
 
     strcpy(info->drivers[DRI_BMP180].driver_file_name, DEV_FILE_BMP);
-    //strcpy(info->drivers[DRI_BMP180].driver_file_name, DEV_FILE_BMP);
+    strcpy(info->drivers[DRI_LCD1602].driver_file_name, DEV_FILE_LCD);
 
 }
 
@@ -69,6 +69,36 @@ Boolean driver_manager_read(DriverInfo* info, DriverType type, char* out_buffer)
     buf[len] = '\0';
 
     strncpy(out_buffer, buf, len);
+
+    return TRUE;
+
+}
+
+Boolean driver_manager_write(DriverInfo* info, DriverType type, char* buffer) {
+
+    if(!info) {
+        return FALSE;
+    }
+    
+    if(info->drivers[type].driver_fd == -1) {
+        // 여기서 fd open
+        if(driver_manager_open(info, type) == FALSE) {
+            printf("driver open failed\n");
+            return FALSE;
+        }
+    }
+
+    int fd = info->drivers[type].driver_fd;
+    if (fd < 0) {
+        printf("Invalid driver fd: %d\n", fd);
+        return FALSE;
+    }
+
+    // LCD에 write
+    if (write(fd, buffer, strlen(buffer)) < 0) {
+        printf("Failed to device write: %s\n", strerror(errno));
+        return FALSE;
+    }
 
     return TRUE;
 

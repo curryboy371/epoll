@@ -17,6 +17,7 @@
 // command list
 #define CMD_NAME "[COMMAND]"
 #define CMD_BMP "/bmp180"
+#define CMD_LCD "/lcd1602"
 #define CMD_BH "/bh1750"
 
 //#define CMD_LCD "bmp180"
