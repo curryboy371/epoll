@@ -51,6 +51,12 @@ Boolean driver_manager_read(DriverInfo* info, DriverType type, char* out_buffer)
         }
     }
 
+    printf("fd %d\n", fd);
+    if (fd < 0) {
+        printf("Invalid driver fd: %d\n", fd);
+        return FALSE;
+    }
+
     char buf[128];
     ssize_t len = read(fd, buf, sizeof(buf) - 1);
     if (len < 0) {
