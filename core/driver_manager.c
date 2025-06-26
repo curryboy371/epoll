@@ -2,7 +2,7 @@
 
 #include <fcntl.h>
 #include <unistd.h>
-
+#include <errno.h>
 void driver_manager_init(DriverInfo* info) {
 
     if(!info) {
@@ -29,7 +29,7 @@ Boolean driver_manager_open(DriverInfo* info, DriverType type) {
 
     info->drivers[type].driver_fd = open(info->drivers[type].driver_file_name, O_RDONLY);
     if (info->drivers[type].driver_fd < 0) {
-        perror("Failed to open");
+        printf("Failed to open: %s %s\n", info->drivers[type].driver_file_name, strerror(errno));
         return  FALSE;
     }
 }
@@ -52,8 +52,7 @@ Boolean driver_manager_read(DriverInfo* info, DriverType type, char* out_buffer)
     char buf[128];
     ssize_t len = read(fd, buf, sizeof(buf) - 1);
     if (len < 0) {
-        printf("driver read failed\n");
-        perror("Failed to read from device");
+        printf("Failed to device read: %s\n", strerror(errno));
         return FALSE;
     }
     buf[len] = '\0';
