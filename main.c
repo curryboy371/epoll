@@ -12,7 +12,8 @@
 #include "db_manager.h"
 
 //#define DB_URI_BACKUP "mongodb://172.17.208.1:27017"
-#define DB_URI "mongodb://172.17.208.1:27017"
+#define DB_URI "mongodb://10.10.16.8:27017"
+#define DB_URI_BACKUP "mongodb://172.19.192.1:27017"
 #define DB_NAME "epoll"
 
 #define PORT 9000
