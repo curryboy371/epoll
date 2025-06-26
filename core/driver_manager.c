@@ -27,6 +27,7 @@ Boolean driver_manager_open(DriverInfo* info, DriverType type) {
         return FALSE;
     }
 
+    prinft("driver_manager_open %s\n", info->drivers[type].driver_file_name);
     info->drivers[type].driver_fd = open(info->drivers[type].driver_file_name, O_RDONLY);
     if (info->drivers[type].driver_fd < 0) {
         printf("Failed to open: %s %s\n", info->drivers[type].driver_file_name, strerror(errno));
