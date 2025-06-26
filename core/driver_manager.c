@@ -43,8 +43,7 @@ Boolean driver_manager_read(DriverInfo* info, DriverType type, char* out_buffer)
         return FALSE;
     }
     
-    int fd = info->drivers[type].driver_fd;
-    if(fd == -1) {
+    if(info->drivers[type].driver_fd == -1) {
         // 여기서 fd open
         if(driver_manager_open(info, type) == FALSE) {
             printf("driver open failed\n");
@@ -52,6 +51,7 @@ Boolean driver_manager_read(DriverInfo* info, DriverType type, char* out_buffer)
         }
     }
 
+    int fd = info->drivers[type].driver_fd;
     printf("fd %d\n", fd);
     if (fd < 0) {
         printf("Invalid driver fd: %d\n", fd);
