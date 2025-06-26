@@ -9,7 +9,9 @@ void handle_login_response(int client_fd, const uint8_t* body, size_t body_len);
 void handle_join_request(int client_fd, const uint8_t* body, size_t body_len);
 void handle_join_response(int client_fd, const uint8_t* body, size_t body_len);
 
+
 void handle_admin_message(int client_fd, const uint8_t* body, size_t body_len);
+void handle_chat_command(int client_fd, const uint8_t* body, size_t body_len);
 
 void handle_change_name_request(int client_fd, const uint8_t* body, size_t body_len);
 

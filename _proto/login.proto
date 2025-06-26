@@ -13,4 +13,5 @@ message LoginResponse {
   bool success = 1;
   common.User sender = 2;
   repeated common.User users = 3;
+  string message = 4;
 }

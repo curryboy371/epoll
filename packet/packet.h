@@ -18,6 +18,7 @@ typedef enum {
     CMD_CHANGE_NAME_RESPONSE = 1011,
     CMD_CHANGE_NAME_NOTIFY = 1012,
 
+    CMD_CHAT_COMMAND = 1013,
 
     CMD_ADMIN_BROADCAST = 2000
 } PacketCommand;

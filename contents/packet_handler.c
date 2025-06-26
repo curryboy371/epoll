@@ -89,19 +89,45 @@ void handle_chat_message(int client_fd, const uint8_t* body, size_t body_len) {
         return;
     }
 
-    printf("[Chat] %s: %s\n", msg->name, msg->message);
-
     // broadcast
     Chat__ChatMessage chat_msg = CHAT__CHAT_MESSAGE__INIT;
     chat_msg.name = msg->name;
     chat_msg.message = msg->message;
     broadcast_user_packet(CMD_CHAT_MESSAGE, &chat_msg);
 
-
     // 메모리 정리
     chat__chat_message__free_unpacked(msg, NULL);
-
 }
+
+void handle_chat_command(int client_fd, const uint8_t* body, size_t body_len) {
+
+    // 역직렬화
+    Chat__ChatCommand* msg = chat__chat_command__unpack(NULL, body_len, body);
+    if (!msg) {
+        printf("Protobuf unpack fail\n");
+        return;
+    }
+
+    // 여기서 command
+    size_t cmd_len = strlen(msg->message);
+    if(strncmp(msg->message, CMD_BMP, cmd_len)) { // bmp180
+
+        
+    }
+    else if(strncmp(msg->message, CMD_BH, cmd_len)) {
+
+    }
+
+    // broadcast
+    Chat__ChatMessage chat_msg = CHAT__CHAT_MESSAGE__INIT;
+    chat_msg.name = CMD_NAME;
+    chat_msg.message = "wait...";
+    broadcast_user_packet(CMD_CHAT_MESSAGE, &chat_msg);
+
+    // 메모리 정리
+    chat__chat_command__free_unpacked(msg, NULL);
+}
+
 
 void handle_login_request(int client_fd, const uint8_t* body, size_t body_len) {
 
@@ -152,7 +178,6 @@ void handle_login_request(int client_fd, const uint8_t* body, size_t body_len) {
         // join한 사람 제외, join user 뿌려줌
         send_join_notice(&client_user, client_fd);
     }
-
 
 
     login__login_response__free_unpacked(response, NULL);

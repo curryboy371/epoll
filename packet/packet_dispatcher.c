@@ -45,6 +45,11 @@ void worker_dispatcher(int client_fd, const uint8_t* data, size_t len) {
         case CMD_CHANGE_NAME_REQUEST:
             handle_change_name_request(client_fd, data + PACKET_HEADER_SIZE, len - PACKET_HEADER_SIZE);
             break;
+
+        case CMD_CHAT_COMMAND:
+            handle_chat_command(client_fd, data + PACKET_HEADER_SIZE, len - PACKET_HEADER_SIZE);
+            break;
+            
         
         case CMD_ADMIN_BROADCAST:
             handle_admin_message(client_fd, data + PACKET_HEADER_SIZE, len - PACKET_HEADER_SIZE);

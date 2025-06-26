@@ -25,5 +25,8 @@ message ChangeNameNotice {
     bool success = 1;               
     string old_name = 2;
     common.User sender = 3;    // 변경한 유저( 새로운 name)
+}
 
+message ChatCommand {
+  string message = 1;
 }
