@@ -72,7 +72,7 @@ void session_broadcast(SessionInfo* info, const uint8_t* data, size_t len) {
         if (info->sessions[i].active) {
 
             if( info->sessions[i].fd == -1) {
-                return -1;
+                return;
             }
 
             send(info->sessions[i].fd, data, len, 0);
