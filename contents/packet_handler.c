@@ -139,7 +139,7 @@ void handle_chat_command(int client_fd, const uint8_t* body, size_t body_len) {
     }
     else if(strncmp(msg->message, CMD_LCD, cmd_len) == 0) {
 
-        sprintf(cmd_buffer, "LCD, %d", server_ctx.user.count);
+        sprintf(cmd_buffer, "User Count, %d", server_ctx.user.count);
         if(driver_manager_write(&server_ctx.driver, DRI_LCD1602, cmd_buffer)) {
             find_command = TRUE;
         }
