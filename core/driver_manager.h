@@ -2,6 +2,7 @@
 #define DRIVER_MANAGER_H
 
 #include "define.h"
+#include <pthread.h>
 
 // device driver file
 #define DEV_FILE_BMP "/dev/bmp180"
@@ -21,6 +22,7 @@ typedef struct {
 
 typedef struct {
     Driver drivers[DRI_MAX];  
+    pthread_mutex_t lock;
 } DriverInfo;
 
 void driver_manager_init(DriverInfo* info);

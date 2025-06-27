@@ -53,29 +53,36 @@ Boolean db_find_user_by_id(DBInfo *manager, const char *user_id)
     bson_t *query = BCON_NEW("id", BCON_UTF8(user_id));
     mongoc_cursor_t *cursor = mongoc_collection_find_with_opts(manager->user_collection, query, NULL, NULL);
     const bson_t *doc;
+    Boolean found = FALSE;
 
     while (mongoc_cursor_next(cursor, &doc))
     {
-       bson_iter_t iter;
-        if (bson_iter_init(&iter, doc)) 
+        bson_iter_t iter;
+        if (bson_iter_init(&iter, doc))
         {
-            // 전체 필드 순회
-            while (bson_iter_next(&iter)) 
+            while (bson_iter_next(&iter))
             {
                 const char *key = bson_iter_key(&iter);
-                if (strcmp(user_id, "id") == 0 && BSON_ITER_HOLDS_UTF8(&iter)) 
+                if (strcmp(key, "id") == 0 && BSON_ITER_HOLDS_UTF8(&iter))
                 {
-                    return TRUE;
+                    const char *id_value = bson_iter_utf8(&iter, NULL);
+                    if (strcmp(id_value, user_id) == 0)
+                    {
+                        found = TRUE;
+                        break;
+                    }
                 }
             }
         }
+
+        if (found)
+            break;
     }
 
     bson_destroy(query);
     mongoc_cursor_destroy(cursor);
-    return FALSE;
+    return found;
 }
-
 
 Boolean db_find_user_by_pw(DBInfo *manager, const char *user_id, const char *password, User* out_user)
 {
