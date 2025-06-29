@@ -42,6 +42,8 @@ void* worker_task_main(void* arg) {
                 worker_dispatcher(task.target_fd, (uint8_t*)task.data, task.len);
                 break;
             }
+
+            // wait 내부에서 queue_mutex를 unlock 하고, signal 받을 때 다시 lock 후 리턴
             pthread_cond_wait(&queue_cond, &queue_mutex);
         }
     }

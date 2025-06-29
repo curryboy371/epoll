@@ -35,20 +35,21 @@ int event_loop_init(int port) {
     // epoll 인스턴스 생성
     epoll_fd = epoll_create1(0);
 
-    // epoll에 서버 리슨 소켓 등록
-    // 리슨 소켓은 클라이언트 접속 요청이 들어왔는가만 감시하면 됨
-    // 또한 리슨 소켓은 1:1 구조가 아니기 때문에 동시에 여러 클라이언트가 접속할 가능성이 있음
-    // 따라서 동시 발생시 계속해서 리슨 소켓으로 이벤트를 발생시키기 위해 EPOLLIN 사용
-
-    struct epoll_event ev = { .events = EPOLLIN, .data.fd = listen_fd };
-    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_fd, &ev);
+    // 상태가 계속 준비(Ready)이면 계속해서 Evnet가 발생
+    // listen socket은 event 발생시 한번에 하나의 client socket을 accept
+    // 버퍼에 남을 수도 있는 다른 클라이언트 fd는 다음 이벤트에서 처리
+    struct epoll_event ev = { .events = EPOLLIN, .data.fd = listen_fd }; // Level Triggered
+    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_fd, &ev); // 
 
     printf("Server running on port %d\n", port);
     return 0;
 }
 
 int event_loop_register(int fd) {
-    struct epoll_event ev = { .events = EPOLLIN | EPOLLET, .data.fd = fd };
+
+    // 상태가 READY로 변경될 때 딱 한 번만 이벤트를 발생
+    // 클라이언트 소켓 read는 loop에서 수신 버퍼가 비어질 때까지 계속 read ( syscall 호출 최소화를 위함 )
+    struct epoll_event ev = { .events = EPOLLIN | EPOLLET, .data.fd = fd }; // Edge Triggered
     return epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &ev);
 }
 

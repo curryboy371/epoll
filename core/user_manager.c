@@ -145,6 +145,7 @@ User** user_manager_get_all_unsafe(UserInfo* info, int* out_count)
 void user_manager_logout(UserInfo* info, int session_fd) {
 
     User backup_user;
+    Boolean found = FALSE;
 
     pthread_mutex_lock(&info->mutex);
 
@@ -162,13 +163,16 @@ void user_manager_logout(UserInfo* info, int session_fd) {
             HASH_DEL(info->user_map, user);
             free(user);
             info->count--;
+            found = TRUE;
             break;
         }
     }
 
     pthread_mutex_unlock(&info->mutex);
 
-    send_leave_notify(&backup_user);
+    if(found) {
+        send_leave_notify(&backup_user);
+    }
 
 }
 

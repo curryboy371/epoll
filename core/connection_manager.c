@@ -19,11 +19,7 @@
 void connection_handle_accept() {
 
     // 클라이언트 소켓 accept
-
-    // epoll에 클라이언트 소켓 등록
-    // 클라이언트 소켓의 이벤트튼 한 클라이언트에게서만 받음
-    // 동시에 발생한다면, 한번에 받아 경계를 나눠주면 됨
-    // EPOLLET : Edge-Triggered 모드
+    // Level Triggered이므로 한 이벤트에 하나의 client fd만 처리
 
     int listen_fd = get_listen_fd();
     int client_fd = accept(listen_fd, NULL, NULL);
@@ -41,9 +37,11 @@ void connection_handle_read(int client_fd) {
     while (TRUE) {
 
         // 클라 전송 data read
+        // Edge Triggered 방식이므로 수신 버퍼가 비워질 때까지 계속 read
         uint8_t tmp_buf[BUFFER_SIZE];
         int n = read(client_fd, tmp_buf, sizeof(tmp_buf));
-        if (n > 0) {
+        if (n > 0) { // n바이트를 정상적으로 읽음
+
             // 읽은 데이터를 클라이언트마다 가지고 있는 누적 버퍼에 추가
             Session* session = session_get(&server_ctx.session, client_fd);
             if(!session) {
@@ -76,18 +74,21 @@ void connection_handle_read(int client_fd) {
                     return;
                 }
             }
-        } else if (n == 0) {
+        } else if (n == 0) { // 상대방이 연결을 정상적으로 종료
             // 종료 처리
             user_manager_logout(&server_ctx.user, client_fd);
             session_remove(&server_ctx.session, client_fd);
 
-            printf("Client disconnected fd=%d\n", client_fd);
-            close(client_fd);
             break;
-        } else {
-            if (errno != EAGAIN)
+        } else { // 문제 발생 or 데이터가 없음
+            if (errno == EAGAIN || errno == EWOULDBLOCK) { // non-blocking socket에서 지금은 읽을게 없음 (정상)
+                
+            } 
+            else { // 에러, 연결 종료
                 perror("read error");
-            break;
+                user_manager_logout(&server_ctx.user, client_fd);
+                session_remove(&server_ctx.session, client_fd);
+            }
         }
     }
 }

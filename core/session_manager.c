@@ -37,6 +37,9 @@ void session_remove(SessionInfo* info, int fd) {
         session->active = 0;
     }
     pthread_mutex_unlock(&info->mutex);
+    
+    printf("Client disconnected fd=%d\n", fd);
+    close(fd);
 }
 
 Session* session_get(SessionInfo* info, int fd) {

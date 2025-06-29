@@ -34,6 +34,8 @@ void system_task_enqueue(Task task) {
 Boolean system_task_dequeue(Task* out_task) {
     pthread_mutex_lock(&queue_mutex);
     while (task_queue_is_empty(&server_ctx.system_queue)) {
+
+        // wait 내부에서 queue_mutex를 unlock 하고, signal 받을 때 다시 lock 후 리턴
         pthread_cond_wait(&queue_cond, &queue_mutex);
 
         if( task_queue_dequeue(&server_ctx.system_queue, out_task) == FALSE) {
@@ -59,6 +61,8 @@ void* system_task_main(void* arg) {
                 worker_dispatcher(task.target_fd, (uint8_t*)task.data, task.len);
                 break;
             }
+
+            // wait 내부에서 queue_mutex를 unlock 하고, signal 받을 때 다시 lock 후 리턴
             pthread_cond_wait(&queue_cond, &queue_mutex);
         }
 
