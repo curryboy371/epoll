@@ -26,6 +26,7 @@ typedef struct {
 } DriverInfo;
 
 void driver_manager_init(DriverInfo* info);
+void driver_manager_release(DriverInfo* info);
 
 Boolean driver_manager_open(DriverInfo* info, DriverType type, int open_option);
 

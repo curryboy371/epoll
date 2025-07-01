@@ -18,6 +18,7 @@ typedef struct {
 } TaskQueue;
 
 void task_queue_init(TaskQueue* q);
+void task_queue_release(TaskQueue* q);
 Boolean task_queue_is_empty(TaskQueue* q);
 Boolean task_queue_is_full(TaskQueue* q);
 Boolean task_queue_enqueue(TaskQueue* q, Task task);

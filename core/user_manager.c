@@ -168,12 +168,31 @@ void user_manager_logout(UserInfo* info, int session_fd) {
         }
     }
 
+
     pthread_mutex_unlock(&info->mutex);
 
     if(found) {
         send_leave_notify(&backup_user);
     }
 
+}
+
+void user_manager_release(UserInfo* info) {
+
+    pthread_mutex_lock(&info->mutex);
+
+    User* user;
+    User* tmp;
+
+    HASH_ITER(hh, info->user_map, user, tmp) {
+        HASH_DEL(info->user_map, user);
+        free(user);
+    }
+
+    info->count = 0;
+    pthread_mutex_unlock(&info->mutex);
+
+    pthread_mutex_destroy(&info->mutex);
 }
 
 void user_manager_broadcast(UserInfo* info, SessionInfo* session_info, const uint8_t* data, size_t len) {

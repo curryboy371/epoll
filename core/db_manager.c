@@ -36,6 +36,21 @@ Boolean db_init(DBInfo *manager, const char *uri, const char *dbname)
     return TRUE;
 }
 
+void db_release(DBInfo *manager) {
+    if (manager->user_collection) {
+        mongoc_collection_destroy(manager->user_collection);
+        manager->user_collection = NULL;
+    }
+    if (manager->database) {
+        mongoc_database_destroy(manager->database);
+        manager->database = NULL;
+    }
+    if (manager->client) {
+        mongoc_client_destroy(manager->client);
+        manager->client = NULL;
+    }
+}
+
 void db_cleanup(DBInfo *manager)
 {
     if (manager->user_collection)

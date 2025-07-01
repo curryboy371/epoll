@@ -22,6 +22,24 @@ void driver_manager_init(DriverInfo* info) {
 
 }
 
+void driver_manager_release(DriverInfo* info) {
+    
+    if(!info) {
+        return;
+    }
+
+    pthread_mutex_lock(&info->lock); 
+
+    for(int i = 0; i < DRI_MAX; ++i) {
+        if(info->drivers[i].driver_fd != -1) {
+            close(info->drivers[i].driver_fd);
+            info->drivers[i].driver_fd = -1;
+        }
+    }
+
+    pthread_mutex_unlock(&info->lock); 
+    pthread_mutex_destroy(&info->lock);
+}
 
 Boolean driver_manager_open(DriverInfo* info, DriverType type, int open_option) {
 

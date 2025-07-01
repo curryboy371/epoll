@@ -31,6 +31,9 @@ User** user_manager_get_all_unsafe(UserInfo* info, int* out_count);
 
 void user_manager_logout(UserInfo* info, int session_fd);
 
+void user_manager_release(UserInfo* info);
+
+
 void user_manager_broadcast(UserInfo* info, SessionInfo* session_info, const uint8_t* data, size_t len);
 void user_manager_broadcast_except(UserInfo* info, const int except_fd, SessionInfo* session_info, const uint8_t* data, size_t len);
 

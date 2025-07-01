@@ -7,6 +7,8 @@
 // 초기화
 void system_task_init();
 
+void system_task_release();
+
 // enqueue
 void system_task_enqueue(Task task);
 
@@ -15,5 +17,9 @@ Boolean system_task_dequeue(Task* out_task);
 
 
 void* system_task_main(void* arg);
+
+
+void system_task_awaik();
+
 
 #endif // SYSTEM_TASK_H

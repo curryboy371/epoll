@@ -14,10 +14,19 @@ static pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t queue_cond = PTHREAD_COND_INITIALIZER;
 
 void system_task_init() {
-
-    
-
     task_queue_init(&server_ctx.system_queue);
+}
+
+void system_task_release() {
+
+    pthread_cond_broadcast(&queue_cond); // 모든 wait 깨우기
+
+
+    pthread_mutex_lock(&queue_mutex);
+    task_queue_release(&server_ctx.system_queue);
+    pthread_mutex_unlock(&queue_mutex);
+    pthread_mutex_destroy(&queue_mutex);
+    pthread_cond_destroy(&queue_cond);
 }
 
 void system_task_enqueue(Task task) {
@@ -51,10 +60,10 @@ Boolean system_task_dequeue(Task* out_task) {
 
 void* system_task_main(void* arg) {
 
-    while (TRUE) {
+    while (stop_flag) {
         pthread_mutex_lock(&queue_mutex);
 
-        while (TRUE) {
+        while (stop_flag) {
             Task task;
             if (task_queue_dequeue(&server_ctx.system_queue, &task)) {
                 pthread_mutex_unlock(&queue_mutex);
@@ -68,4 +77,10 @@ void* system_task_main(void* arg) {
 
     }
     return NULL;
+}
+
+void system_task_awaik() {
+    pthread_mutex_lock(&queue_mutex);
+    pthread_cond_broadcast(&queue_cond); // 대기중인 스레드 깨우기
+    pthread_mutex_unlock(&queue_mutex);
 }

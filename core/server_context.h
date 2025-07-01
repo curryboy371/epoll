@@ -8,6 +8,9 @@
 #include "session_manager.h"
 #include "task/task_queue.h"
 
+
+extern volatile int stop_flag;
+
 typedef struct {
     DBInfo db;
     UserInfo user;

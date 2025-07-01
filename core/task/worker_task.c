@@ -19,6 +19,19 @@ void worker_task_init() {
     task_queue_init(&server_ctx.worker_queue);
 }
 
+void worker_task_release() {
+
+    pthread_cond_broadcast(&queue_cond); // 모든 wait 깨우기
+
+
+    pthread_mutex_lock(&queue_mutex);
+    task_queue_release(&server_ctx.worker_queue);
+    pthread_mutex_unlock(&queue_mutex);
+
+    pthread_mutex_destroy(&queue_mutex);
+    pthread_cond_destroy(&queue_cond);
+}
+
 void worker_task_enqueue(Task task) {
     pthread_mutex_lock(&queue_mutex);
 
@@ -32,10 +45,10 @@ void worker_task_enqueue(Task task) {
 
 void* worker_task_main(void* arg) {
 
-    while (TRUE) {
+    while (stop_flag) {
         pthread_mutex_lock(&queue_mutex);
 
-        while (TRUE) {
+        while (stop_flag) {
             Task task;
             if (task_queue_dequeue(&server_ctx.worker_queue, &task)) {
                 pthread_mutex_unlock(&queue_mutex);
@@ -48,4 +61,10 @@ void* worker_task_main(void* arg) {
         }
     }
     return NULL;
+}
+
+void worker_task_awaik() {
+    pthread_mutex_lock(&queue_mutex);
+    pthread_cond_broadcast(&queue_cond); // 대기중인 스레드 깨우기
+    pthread_mutex_unlock(&queue_mutex);
 }

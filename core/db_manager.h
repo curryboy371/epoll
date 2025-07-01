@@ -15,6 +15,7 @@ typedef struct {
 } DBInfo;
 
 Boolean db_init(DBInfo *manager, const char *uri, const char *dbname);
+void db_release(DBInfo *manager);
 void db_cleanup(DBInfo *manager);
 
 Boolean db_find_user_by_pw(DBInfo *manager, const char *user_id, const char *password, User* out_user);

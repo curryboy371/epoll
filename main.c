@@ -11,6 +11,8 @@
 #include "system_broadcast.h"
 #include "db_manager.h"
 
+#include <signal.h>
+
 //#define DB_URI_BACKUP "mongodb://172.17.208.1:27017"
 #define DB_URI "mongodb://10.10.16.8:27017"
 #define DB_URI_BACKUP "mongodb://172.19.192.1:27017"
@@ -25,8 +27,41 @@
 
 ServerContext server_ctx;
 
+// 종료 시그널 핸들러
+void handle_shutdown(int sig) {
+    printf("Signal %d received. Shutting down server gracefully...\n", sig);
+
+    stop_flag = 1;
+
+    event_loop_unregister(get_listen_fd());
+    close(get_listen_fd());
+    
+    // 모든 대기중 스레드 깨우기
+    worker_task_awaik();
+    system_task_awaik();
+
+    //sleep(1); // 잠시 대기
+
+
+    system_task_release();
+    worker_task_release();
+
+    user_manager_release(&server_ctx.user);
+    session_release(&server_ctx.session);
+    db_release(&server_ctx.db);
+    driver_manager_release(&server_ctx.driver);
+
+    printf("Signal %d finished\n", sig);
+
+}   
+
 void init_server() {
     
+    // 시그널 등록
+    signal(SIGINT, handle_shutdown);
+    signal(SIGTERM, handle_shutdown);
+    signal(SIGKILL, handle_shutdown);
+
     // 초기화
     session_init(&server_ctx.session);
     db_init(&server_ctx.db, DB_URI, DB_NAME);
@@ -52,7 +87,7 @@ int main() {
 
     init_server();
 
-    while (TRUE) {
+    while (!stop_flag) {
         // 발생한 epoll 이벤트만큼 반복
         int event_count = event_loop_wait(events, MAX_EVENTS);
         for (int i = 0; i < event_count; i++) {

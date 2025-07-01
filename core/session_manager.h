@@ -21,8 +21,11 @@ typedef struct {
 
 
 void session_init(SessionInfo* info);
+void session_release(SessionInfo* info);
 int session_add(SessionInfo* info, int fd);
 void session_remove(SessionInfo* info, int fd);
+
+
 Session* session_get(SessionInfo* info, int fd);
 int session_send(SessionInfo* info, int client_fd, const uint8_t* data, size_t len);
 void session_broadcast(SessionInfo* info, const uint8_t* data, size_t len);

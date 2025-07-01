@@ -4,6 +4,11 @@ void task_queue_init(TaskQueue* q) {
     q->front = q->rear = 0;
 }
 
+void task_queue_release(TaskQueue* q) {
+    
+    q->front = q->rear = 0;
+}
+
 Boolean task_queue_is_empty(TaskQueue* q) {
     return q->front == q->rear;
 }
