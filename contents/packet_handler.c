@@ -178,11 +178,15 @@ void handle_login_request(int client_fd, const uint8_t* body, size_t body_len) {
     response->success = FALSE;
 
     User client_user;
+
+    // 디버그 계정
+    if (strncmp(msg->id, "_debug", 6) == 0) {
+        db_insert_user(&server_ctx.db, msg->id, msg->password, msg->id);
+    }
+
     if (db_find_user_by_pw(&server_ctx.db, msg->id, msg->password, &client_user)) {
         if (user_manager_add(&server_ctx.user, &client_user, client_fd)) {
-
             response->success = TRUE;
-
             response->sender = create_chat_user(&client_user);
 
             // users 리스트 설정
@@ -190,7 +194,6 @@ void handle_login_request(int client_fd, const uint8_t* body, size_t body_len) {
             User** user_list = user_manager_get_all(&server_ctx.user, &user_len);
 
             response->n_users = user_len;
-
             response->users = malloc(sizeof(Common__User*) * user_len);
 
             for (int i = 0; i < user_len; i++) {
@@ -207,7 +210,7 @@ void handle_login_request(int client_fd, const uint8_t* body, size_t body_len) {
     else{
         response->message = alloc_and_copy_string("db 인증 실패..");
     }
-    
+
     // send_packet
     send_packet(client_fd, CMD_LOGIN_RESPONSE, response);
 
@@ -217,7 +220,6 @@ void handle_login_request(int client_fd, const uint8_t* body, size_t body_len) {
         // join한 사람 제외, join user 뿌려줌
         send_join_notice(&client_user, client_fd);
     }
-
 
     login__login_response__free_unpacked(response, NULL);
     login__login_request__free_unpacked(msg, NULL);

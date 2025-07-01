@@ -60,10 +60,10 @@ Boolean system_task_dequeue(Task* out_task) {
 
 void* system_task_main(void* arg) {
 
-    while (stop_flag) {
+    while (!stop_flag) {
         pthread_mutex_lock(&queue_mutex);
 
-        while (stop_flag) {
+        while (!stop_flag) {
             Task task;
             if (task_queue_dequeue(&server_ctx.system_queue, &task)) {
                 pthread_mutex_unlock(&queue_mutex);

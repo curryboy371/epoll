@@ -45,10 +45,10 @@ void worker_task_enqueue(Task task) {
 
 void* worker_task_main(void* arg) {
 
-    while (stop_flag) {
+    while (!stop_flag) {
         pthread_mutex_lock(&queue_mutex);
 
-        while (stop_flag) {
+        while (!stop_flag) {
             Task task;
             if (task_queue_dequeue(&server_ctx.worker_queue, &task)) {
                 pthread_mutex_unlock(&queue_mutex);
