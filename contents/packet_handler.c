@@ -2,7 +2,7 @@
 
 #include "server_context.h"
 #include "driver_manager.h"
-
+#include "task/system_task.h"
 
 #include "packet_sender.h"
 #include "packet.h"
@@ -12,6 +12,66 @@
 #include "join.pb-c.h"
 
 #include "leave.pb-c.h"
+
+size_t make_packet(uint16_t cmd, const ProtobufCMessage* msg, uint8_t* out_buf) {
+
+    size_t body_size = protobuf_c_message_get_packed_size(msg);
+    uint16_t total_len = PACKET_HEADER_SIZE + body_size;
+
+    uint16_t net_len = htons(total_len);
+    uint16_t net_cmd = htons(cmd);
+
+    memcpy(out_buf, &net_len, 2);
+    memcpy(out_buf + 2, &net_cmd, 2);
+    protobuf_c_message_pack(msg, out_buf + 4);
+
+    return total_len;
+}
+
+
+Task make_send_task(int target_fd, uint16_t cmd, const ProtobufCMessage* msg) {
+    Task task;
+    task.target_fd = target_fd;
+    task.len = make_packet(cmd, msg, task.data);
+    return task;
+}
+
+void enqueue_broadcast_packet(uint16_t cmd, const ProtobufCMessage* msg) {
+    User** user_list = NULL;
+    int user_len = 0;
+
+    user_list = user_manager_get_all(&server_ctx.user, &user_len);
+
+    for (int i = 0; i < user_len; i++) {
+        User* user = user_list[i];
+        if (user->session_fd != -1) {
+            Task task = make_send_task(user->session_fd, cmd, msg);
+            system_task_enqueue(task);
+        }
+    }
+
+    free(user_list);
+}
+
+void enqueue_exept_broadcast_packet(uint16_t cmd, const ProtobufCMessage* msg, int exept_fd) {
+
+    User** user_list = NULL;
+    int user_len = 0;
+
+    user_list = user_manager_get_all(&server_ctx.user, &user_len);
+
+    for (int i = 0; i < user_len; i++) {
+        User* user = user_list[i];
+        if (user->session_fd != -1) {
+            if( user->session_fd != exept_fd) {
+                Task task = make_send_task(user->session_fd, cmd, msg);
+                system_task_enqueue(task);
+            }
+        }
+    }
+
+    free(user_list);
+}
 
 
 Common__User* create_chat_user(User* user_info)
@@ -99,7 +159,10 @@ void handle_chat_message(int client_fd, const uint8_t* body, size_t body_len) {
     Chat__ChatMessage chat_msg = CHAT__CHAT_MESSAGE__INIT;
     chat_msg.name = msg->name;
     chat_msg.message = msg->message;
-    broadcast_user_packet(CMD_CHAT_MESSAGE, &chat_msg);
+
+
+    enqueue_broadcast_packet(CMD_CHAT_MESSAGE, (ProtobufCMessage*)msg);
+    //broadcast_user_packet(CMD_CHAT_MESSAGE, &chat_msg);
 
     // 메모리 정리
     chat__chat_message__free_unpacked(msg, NULL);
@@ -130,11 +193,13 @@ void handle_chat_command(int client_fd, const uint8_t* body, size_t body_len) {
 
         if(find_command) {
             chat_msg.message = cmd_buffer;
-            broadcast_user_packet(CMD_CHAT_MESSAGE, &chat_msg);
+            enqueue_broadcast_packet(CMD_CHAT_MESSAGE, (ProtobufCMessage*)&chat_msg);
+            //broadcast_user_packet(CMD_CHAT_MESSAGE, &chat_msg);
         }
         else {
             chat_msg.message = "command failed";
-            send_packet(client_fd, CMD_CHAT_MESSAGE, &chat_msg);
+            //send_packet(client_fd, CMD_CHAT_MESSAGE, &chat_msg);
+            system_task_enqueue(make_send_task(client_fd, CMD_CHAT_MESSAGE, (ProtobufCMessage*)&chat_msg));
         }
     }
     else if(strncmp(msg->message, CMD_LCD, cmd_len) == 0) {
@@ -149,11 +214,13 @@ void handle_chat_command(int client_fd, const uint8_t* body, size_t body_len) {
 
         if(find_command) {
             chat_msg.message = cmd_buffer;
-            send_packet(client_fd, CMD_CHAT_MESSAGE, &chat_msg);
+            //send_packet(client_fd, CMD_CHAT_MESSAGE, &chat_msg);
+            system_task_enqueue(make_send_task(client_fd, CMD_CHAT_MESSAGE, (ProtobufCMessage*)&chat_msg));
         }
         else {
             chat_msg.message = "command failed";
-            send_packet(client_fd, CMD_CHAT_MESSAGE, &chat_msg);
+            system_task_enqueue(make_send_task(client_fd, CMD_CHAT_MESSAGE, (ProtobufCMessage*)&chat_msg));
+            //send_packet(client_fd, CMD_CHAT_MESSAGE, &chat_msg);
         }
 
     }
@@ -211,8 +278,10 @@ void handle_login_request(int client_fd, const uint8_t* body, size_t body_len) {
         response->message = alloc_and_copy_string("db 인증 실패..");
     }
 
+    system_task_enqueue(make_send_task(client_fd, CMD_LOGIN_RESPONSE, (ProtobufCMessage*)response));
+
     // send_packet
-    send_packet(client_fd, CMD_LOGIN_RESPONSE, response);
+    //send_packet(client_fd, CMD_LOGIN_RESPONSE, response);
 
     // 입장 메시지
     if(response->success) {
@@ -241,13 +310,16 @@ void handle_join_request(int client_fd, const uint8_t* body, size_t body_len) {
     join__join_response__init(response);
     response->success = FALSE;
 
+    uint8_t packet_buf[BUFFER_SIZE];
+
+
     // 값 검증 
     if (!msg->id || strlen(msg->id) == 0 ||
         !msg->password || strlen(msg->password) == 0 ||
         !msg->name || strlen(msg->name) == 0)
     {
         response->message = alloc_and_copy_string("Invalid input (empty id/password/name)");
-        send_packet(client_fd, CMD_JOIN_RESPONSE, response);
+        system_task_enqueue(make_send_task(client_fd, CMD_JOIN_RESPONSE, (ProtobufCMessage*)response));
         join__join_response__free_unpacked(response, NULL);
         join__join_request__free_unpacked(msg, NULL);
         return;
@@ -257,7 +329,7 @@ void handle_join_request(int client_fd, const uint8_t* body, size_t body_len) {
      if (db_insert_user(&server_ctx.db, msg->id, msg->password, msg->name) == FALSE) {
 
         response->message = alloc_and_copy_string("ID duplication");
-        send_packet(client_fd, CMD_JOIN_RESPONSE, response);
+        system_task_enqueue(make_send_task(client_fd, CMD_JOIN_RESPONSE, (ProtobufCMessage*)response));
         join__join_response__free_unpacked(response, NULL);
         join__join_request__free_unpacked(msg, NULL);
         return;
@@ -267,7 +339,7 @@ void handle_join_request(int client_fd, const uint8_t* body, size_t body_len) {
     User find_user;
     if (db_find_user_by_pw(&server_ctx.db, msg->id, msg->password, &find_user) == FALSE){
         response->message = alloc_and_copy_string("User Find Failed");
-        send_packet(client_fd, CMD_JOIN_RESPONSE, response);
+        system_task_enqueue(make_send_task(client_fd, CMD_JOIN_RESPONSE, (ProtobufCMessage*)response));
         join__join_response__free_unpacked(response, NULL);
         join__join_request__free_unpacked(msg, NULL);
         return;
@@ -275,7 +347,7 @@ void handle_join_request(int client_fd, const uint8_t* body, size_t body_len) {
 
     if (user_manager_add(&server_ctx.user, &find_user, client_fd) == FALSE) {
         response->message = alloc_and_copy_string("Faild login");
-        send_packet(client_fd, CMD_JOIN_RESPONSE, response);
+        system_task_enqueue(make_send_task(client_fd, CMD_JOIN_RESPONSE, (ProtobufCMessage*)response));
         join__join_response__free_unpacked(response, NULL);
         join__join_request__free_unpacked(msg, NULL);
         return;
@@ -292,13 +364,17 @@ void handle_join_request(int client_fd, const uint8_t* body, size_t body_len) {
     response->users = malloc(sizeof(Common__User*) * user_len);
 
     for (int i = 0; i < user_len; i++) {
-        response->users[i] = create_chat_user(user_list[i]);
+         response->users[i] = create_chat_user(user_list[i]);
     }
 
     free(user_list);
 
     response->success = TRUE;
-    send_packet(client_fd, CMD_JOIN_RESPONSE, response);
+
+
+    system_task_enqueue(make_send_task(client_fd, CMD_JOIN_RESPONSE, (ProtobufCMessage*)response));
+
+    //send_packet(client_fd, CMD_JOIN_RESPONSE, response);
 
     if(response->success) {
         // join한 사람 제외, join user 뿌려줌
@@ -329,7 +405,9 @@ void handle_admin_message(int client_fd, const uint8_t* body, size_t body_len) {
     Chat__ChatMessage chat_msg = CHAT__CHAT_MESSAGE__INIT;
     chat_msg.name = "kekek";
     chat_msg.message = "nice to meet you!!!";
-    send_packet(client_fd, CMD_CHAT_MESSAGE, &chat_msg);
+    //send_packet(client_fd, CMD_CHAT_MESSAGE, &chat_msg);
+
+    system_task_enqueue(make_send_task(client_fd, CMD_CHAT_MESSAGE, (ProtobufCMessage*)&chat_msg));
     
 }
 
@@ -371,7 +449,9 @@ void handle_change_name_request(int client_fd, const uint8_t* body, size_t body_
     resp.success = TRUE;
     resp.new_name = user->name;
 
-    send_packet(client_fd, CMD_CHANGE_NAME_RESPONSE, &resp);
+    system_task_enqueue(make_send_task(client_fd, CMD_CHANGE_NAME_RESPONSE, (ProtobufCMessage*)&resp));
+
+    //send_packet(client_fd, CMD_CHANGE_NAME_RESPONSE, &resp);
 
     // 닉네임 변경 브로드캐스트 알림
     Chat__ChangeNameNotice notice = CHAT__CHANGE_NAME_NOTICE__INIT;
@@ -384,10 +464,13 @@ void handle_change_name_request(int client_fd, const uint8_t* body, size_t body_
 
     notice.success = TRUE;
 
-    broadcast_user_packet(CMD_CHANGE_NAME_NOTIFY, &notice);
+    enqueue_broadcast_packet(CMD_CHANGE_NAME_NOTIFY, (ProtobufCMessage*)&notice);
+    //broadcast_user_packet(CMD_CHANGE_NAME_NOTIFY, &notice);
 
     chat__change_name_request__free_unpacked(req, NULL);
 }
+
+////////////////////////////////////////////////////////////////////
 
 
 ///////////////////////////////////////////////////////////////////
@@ -404,7 +487,8 @@ void send_join_notice(User* user_info, int exept_fd)
 
     notify.sender = &sender;
 
-    broadcast_user_packet_exept(CMD_JOIN_NOTIFY, &notify, exept_fd);
+    enqueue_exept_broadcast_packet(CMD_JOIN_NOTIFY, (ProtobufCMessage*)&notify, exept_fd);
+    //broadcast_user_packet_exept(CMD_JOIN_NOTIFY, &notify, exept_fd);
 }
 
 void send_leave_notify(User* user_info)
@@ -420,5 +504,7 @@ void send_leave_notify(User* user_info)
     sender.name = user_info->name;
     notify.sender = &sender;
 
-    broadcast_user_packet(CMD_LEAVE_NOTIFY, &notify);
+    //broadcast_user_packet(CMD_LEAVE_NOTIFY, &notify);
+    enqueue_broadcast_packet(CMD_LEAVE_NOTIFY, (ProtobufCMessage*)&notify);
+
 }

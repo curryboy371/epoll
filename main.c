@@ -21,7 +21,7 @@
 #define DB_NAME "epoll"
 
 #define PORT 9000
-#define MAX_EVENTS 10
+#define MAX_EVENTS 124
 
 // 워커는 4개, 시스템은 1개
 #define WORKER_THREAD_COUNT  4

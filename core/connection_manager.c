@@ -21,15 +21,21 @@ void connection_handle_accept() {
     // 클라이언트 소켓 accept
     // Level Triggered이므로 한 이벤트에 하나의 client fd만 처리
 
-    int listen_fd = get_listen_fd();
-    int client_fd = accept(listen_fd, NULL, NULL);
-    set_nonblocking(client_fd);
+    while (TRUE) {
+        int client_fd = accept(get_listen_fd(), NULL, NULL);
+        if (client_fd < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                break; // backlog 다 비움
+            }
+            perror("accept");
+            break;
+        }
+        set_nonblocking(client_fd);
+        event_loop_register(client_fd);
+        session_add(&server_ctx.session, client_fd);
+        printf("New client fd=%d\n", client_fd);
+    }
 
-    
-    event_loop_register(client_fd);
-    session_add(&server_ctx.session, client_fd);
-
-    printf("New client fd=%d\n", client_fd);
 }
 
 void connection_handle_read(int client_fd) {
@@ -82,7 +88,7 @@ void connection_handle_read(int client_fd) {
             break;
         } else { // 문제 발생 or 데이터가 없음
             if (errno == EAGAIN || errno == EWOULDBLOCK) { // non-blocking socket에서 지금은 읽을게 없음 (정상)
-                
+                break;
             } 
             else { // 에러, 연결 종료
                 perror("read error");

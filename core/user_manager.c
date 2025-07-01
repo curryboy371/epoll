@@ -2,6 +2,11 @@
 #include "system_broadcast.h"
 #include <sys/socket.h>
 
+#include "server_context.h"
+#include "task/system_task.h"
+
+
+
 #include "packet_handler.h"
 
 void user_manager_init(UserInfo* info) {
@@ -210,7 +215,14 @@ void user_manager_broadcast(UserInfo* info, SessionInfo* session_info, const uin
         if (user->session_fd != -1) {
             Session* session = session_get(session_info, user->session_fd);
             if (session && session->fd != -1) {
-                send(user->session_fd, data, len, 0);
+
+                // 바로 send 하지 말고 system task로 enqueue
+                Task task;
+                task.target_fd = session->fd;
+                memcpy(task.data, data, len);
+                task.len = len;
+
+                system_task_enqueue(task);
             }
         }
     }
@@ -234,7 +246,12 @@ void user_manager_broadcast_except(UserInfo* info, const int except_fd, SessionI
         if (user->session_fd != -1 && user->session_fd != except_fd) {
             Session* session = session_get(session_info, user->session_fd);
             if (session && session->fd != -1) {
-                send(user->session_fd, data, len, 0);
+
+                Task task;
+                task.target_fd = user->session_fd;
+                memcpy(task.data, data, len);
+                task.len = len;
+                system_task_enqueue(task);
             }
         }
     }

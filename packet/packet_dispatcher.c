@@ -2,6 +2,8 @@
 #include "packet.h"
 
 #include "packet_handler.h"
+#include "packet_sender.h"
+#include "server_context.h"
 
 #include <string.h>
 #include <arpa/inet.h>
@@ -56,7 +58,7 @@ void worker_dispatcher(int client_fd, const uint8_t* data, size_t len) {
             break;
         
         default:
-            printf("invaild packet cmd %d (%d)\n", cmd, client_fd);
+            printf("worker invaild packet cmd %d (%d)\n", cmd, client_fd);
             break;
     }
 }
@@ -83,20 +85,16 @@ void system_dispatcher(int client_fd, const uint8_t* data, size_t len) {
     // dispatcher
     switch(cmd) {
         case CMD_CHAT_MESSAGE:
-            handle_chat_message(client_fd, data + PACKET_HEADER_SIZE, len - PACKET_HEADER_SIZE);
+        case CMD_LOGIN_RESPONSE:
+        case CMD_JOIN_RESPONSE:
+        case CMD_JOIN_NOTIFY:
+        case CMD_CHANGE_NAME_RESPONSE:
+        case CMD_CHANGE_NAME_NOTIFY:
+            session_send(&server_ctx.session, client_fd, data, len);
             break;
-
-        case CMD_LOGIN_REQUEST:
-            //handle_login_request(client_fd, data + PACKET_HEADER_SIZE, len - PACKET_HEADER_SIZE);
-            break;
-
-        case CMD_ADMIN_BROADCAST:
-            //handle_login_request(client_fd, data + PACKET_HEADER_SIZE, len - PACKET_HEADER_SIZE);
-            break;
-
 
         default:
-            printf("invaild packet cmd %d (%d)\n", cmd, client_fd);
+            printf("system invaild packet cmd %d (%d)\n", cmd, client_fd);
             break;
     }
 }

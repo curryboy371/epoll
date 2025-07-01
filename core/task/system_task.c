@@ -67,7 +67,7 @@ void* system_task_main(void* arg) {
             Task task;
             if (task_queue_dequeue(&server_ctx.system_queue, &task)) {
                 pthread_mutex_unlock(&queue_mutex);
-                worker_dispatcher(task.target_fd, (uint8_t*)task.data, task.len);
+                system_dispatcher(task.target_fd, (uint8_t*)task.data, task.len);
                 break;
             }
 
