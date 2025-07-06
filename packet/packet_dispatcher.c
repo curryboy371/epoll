@@ -90,6 +90,7 @@ void system_dispatcher(int client_fd, const uint8_t* data, size_t len) {
         case CMD_JOIN_NOTIFY:
         case CMD_CHANGE_NAME_RESPONSE:
         case CMD_CHANGE_NAME_NOTIFY:
+        case CMD_LEAVE_NOTIFY:
             session_send(&server_ctx.session, client_fd, data, len);
             break;
 
